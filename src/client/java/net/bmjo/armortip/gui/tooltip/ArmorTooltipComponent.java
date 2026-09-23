@@ -5,6 +5,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.model.geom.ModelLayers;
+import net.minecraft.client.model.object.banner.BannerFlagModel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
@@ -24,6 +26,8 @@ import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import net.minecraft.world.item.equipment.trim.TrimMaterial;
 import net.minecraft.world.item.equipment.trim.TrimPattern;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BannerPattern;
+import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
@@ -63,14 +67,12 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
             LocalPlayer player = Minecraft.getInstance().player;
             if (player == null)
                 return;
-            if (itemStack.getItem() instanceof SmithingTemplateItem)
+            if (this.itemStack.getItem() instanceof SmithingTemplateItem)
                 this.renderTrim(player, x, y, width, gui);
-            /*
-            else if (itemStack.has(DataComponents.PROVIDES_BANNER_PATTERNS))
+            else if (this.itemStack.has(DataComponents.PROVIDES_BANNER_PATTERNS))
                 this.renderBanner(x, y, width, gui);
-            else if (itemStack.has(DataComponents.ENTITY_DATA))
+            else if (this.itemStack.has(DataComponents.ENTITY_DATA))
                 this.renderEgg(player, x, y, width, gui);
-             */
             else
                 this.renderEquipment(player, x, y, width, gui);
         }
@@ -82,8 +84,7 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
             var slot = equippableComponent.slot();
             switch (slot.getType()) {
                 case HAND, HUMANOID_ARMOR -> this.renderPlayer(player, slot, x, y, width, gui);
-                case ANIMAL_ARMOR, SADDLE ->
-                        this.renderAnimal(player, slot, equippableComponent, x, y, width, gui);
+                case ANIMAL_ARMOR, SADDLE -> this.renderAnimal(player, slot, equippableComponent, x, y, width, gui);
                 default -> throw new IllegalArgumentException("Item is not an equipment item");
             }
             return;
@@ -127,8 +128,8 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
                 itemStack.set(DataComponents.TRIM, new ArmorTrim(material, pattern));
             }
         }
-        renderEntity(player, x, y, width, gui);
-        renderMaterial(material, x, y, width, gui, player.level());
+        this.renderEntity(player, x, y, width, gui);
+        this.renderMaterial(material, x, y, width, gui, player.level());
         for (int i = 0; i < ARMOR_SLOTS.length; i++) player.setItemSlot(ARMOR_SLOTS[i], originalArmor[i]);
     }
 
@@ -178,16 +179,15 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
         gui.pose().popMatrix();
     }
 
-    /*
     private void renderEgg(Player player, int x, int y, int width, GuiGraphicsExtractor gui) {
-        var type = getEntityType(itemStack);
+        var type = getEntityType(this.itemStack);
         if (type == null) return;
         var entity = getCachedEntity(player.level(), type);
-        renderEntity(entity, x, y, width, gui);
+        this.renderEntity(entity, x, y, width, gui);
     }
 
     private void renderBanner(int x, int y, int width, GuiGraphicsExtractor gui) {
-        var pattern = getBannerPattern(itemStack);
+        var pattern = getBannerPattern(this.itemStack);
         if (pattern == null) return;
 
         var layer = new BannerPatternLayers.Layer(pattern, DyeColor.BLACK);
@@ -197,7 +197,6 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
         var flag = new BannerFlagModel(modelPart);
         gui.bannerPattern(flag, DyeColor.WHITE, bannerPatternLayers, -ArmortipUtil.PADDING_X + x + width - ArmortipUtil.SIZE, 0, -ArmortipUtil.PADDING_X + x + width, y - 15 + ArmortipUtil.SIZE);
     }
-     */
 
     private static EntityRenderState getEntityRenderState(LivingEntity entity) {
         var entityRenderManager = Minecraft.getInstance().getEntityRenderDispatcher();
@@ -210,7 +209,12 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
     }
 
     private static LivingEntity getCachedEntity(Level level, EntityType<?> type) {
-        return ENTITY_CACHE.computeIfAbsent(type, entityType -> (LivingEntity) entityType.create(level, EntitySpawnReason.MOB_SUMMONED));
+        return ENTITY_CACHE.computeIfAbsent(type, entityType -> {
+            var entity = entityType.create(level, EntitySpawnReason.LOAD);
+            if (!(entity instanceof LivingEntity livingEntity)) return null;
+            livingEntity.setId(-14547 - ENTITY_CACHE.size());
+            return livingEntity;
+        });
     }
 
     @Nullable
@@ -245,7 +249,6 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
             }).findFirst().orElse(null);});
     }
 
-    /*
     private static Holder<BannerPattern> getBannerPattern(final ItemStack patternStack) {
         var itemPatterns = patternStack.get(DataComponents.PROVIDES_BANNER_PATTERNS);
         return itemPatterns != null && itemPatterns.size() > 0 ? itemPatterns.get(0) : null;
@@ -255,5 +258,4 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
         var entityData = itemStack.get(DataComponents.ENTITY_DATA);
         return entityData != null ? entityData.type() : null;
     }
-     */
 }

@@ -14,7 +14,7 @@ import java.util.Optional;
 @Mixin(Item.class)
 public abstract class ItemMixin {
     @Inject(method = "getTooltipImage", at = @At("RETURN"), cancellable = true)
-    private void addMyAmazingComponent(ItemStack stack, CallbackInfoReturnable<Optional<TooltipComponent>> cir) {
+    private void addTooltipComponent(ItemStack stack, CallbackInfoReturnable<Optional<TooltipComponent>> cir) {
         if (cir.getReturnValue().isPresent()) {
             return;
         }

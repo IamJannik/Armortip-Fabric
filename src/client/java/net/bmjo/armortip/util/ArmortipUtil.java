@@ -17,9 +17,9 @@ public class ArmortipUtil {
 
     public static boolean isTipItem(ItemStack itemStack) {
         return itemStack.get(DataComponents.EQUIPPABLE) != null
-                || itemStack.getItem() instanceof SmithingTemplateItem;
-                //|| itemStack.has(DataComponents.PROVIDES_BANNER_PATTERNS)
-                //|| itemStack.has(DataComponents.ENTITY_DATA);
+                || itemStack.getItem() instanceof SmithingTemplateItem
+                || itemStack.has(DataComponents.PROVIDES_BANNER_PATTERNS)
+                || itemStack.has(DataComponents.ENTITY_DATA);
     }
 
     public static boolean shouldExtend() {
@@ -29,7 +29,7 @@ public class ArmortipUtil {
 
     @Nullable
     public static ItemStack getFocusedItem() {
-        if (Minecraft.getInstance().screen instanceof AbstractContainerScreen<? extends AbstractContainerMenu> screen && screen instanceof ISlotScreen iSlotScreen)
+        if (Minecraft.getInstance().gui.screen() instanceof AbstractContainerScreen<? extends AbstractContainerMenu> screen && screen instanceof ISlotScreen iSlotScreen)
             if (screen.getMenu().getCarried().isEmpty() && iSlotScreen.getHoveredSlot() != null && iSlotScreen.getHoveredSlot().hasItem())
                 return iSlotScreen.getHoveredSlot().getItem();
         return null;
