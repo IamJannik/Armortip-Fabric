@@ -1,5 +1,6 @@
 package net.bmjo.armortip.util;
 
+import net.bmjo.armortip.config.ArmortipConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.component.DataComponents;
@@ -16,10 +17,14 @@ public class ArmortipUtil {
     public static int ticks;
 
     public static boolean isTipItem(ItemStack itemStack) {
-        return itemStack.get(DataComponents.EQUIPPABLE) != null
-                || itemStack.getItem() instanceof SmithingTemplateItem
-                || itemStack.has(DataComponents.PROVIDES_BANNER_PATTERNS)
-                || itemStack.has(DataComponents.ENTITY_DATA);
+        if (!ArmortipConfig.isEnabled.get()) return false;
+        return     itemStack.has(DataComponents.EQUIPPABLE) && ArmortipConfig.showArmor.get()
+                || itemStack.has(DataComponents.ENTITY_DATA)  && ArmortipConfig.showMob.get()
+                || itemStack.has(DataComponents.POTION_CONTENTS)  && ArmortipConfig.showEffect.get()
+                || itemStack.has(DataComponents.PAINTING_VARIANT) && ArmortipConfig.showPainting.get()
+                || itemStack.has(DataComponents.PROVIDES_POTTERY_PATTERN) && ArmortipConfig.showPottery.get()
+                || itemStack.has(DataComponents.PROVIDES_BANNER_PATTERNS) && ArmortipConfig.showBanner.get()
+                || itemStack.getItem() instanceof SmithingTemplateItem  && ArmortipConfig.showArmor.get();
     }
 
     public static boolean shouldExtend() {

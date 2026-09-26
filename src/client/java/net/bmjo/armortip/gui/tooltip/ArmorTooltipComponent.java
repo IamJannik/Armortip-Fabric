@@ -4,16 +4,20 @@ import net.bmjo.armortip.util.ArmortipUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.object.banner.BannerFlagModel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.data.AtlasIds;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -73,6 +77,12 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
                 this.renderBanner(x, y, width, gui);
             else if (this.itemStack.has(DataComponents.ENTITY_DATA))
                 this.renderEgg(player, x, y, width, gui);
+            else if (itemStack.has(DataComponents.POTION_CONTENTS))
+                this.renderEffect(x, y, width, gui);
+            else if (itemStack.has(DataComponents.PAINTING_VARIANT))
+                this.renderPainting(x, y, width, gui);
+            else if (itemStack.has(DataComponents.PROVIDES_POTTERY_PATTERN))
+                this.renderPottery(x, y, width, gui);
             else
                 this.renderEquipment(player, x, y, width, gui);
         }
@@ -179,6 +189,42 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
         gui.pose().popMatrix();
     }
 
+    private void renderEffect(int x, int y, int width, GuiGraphicsExtractor gui) {
+        var effect = getEffect(itemStack);
+        if (effect == null) return;
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, Hud.getMobEffectSprite(effect.getEffect()), x + width - ArmortipUtil.SIZE, y - 10, ArmortipUtil.SIZE, ArmortipUtil.SIZE);
+    }
+
+    private void renderPainting(int x, int y, int width, GuiGraphicsExtractor gui) {
+        var painting = itemStack.get(DataComponents.PAINTING_VARIANT);
+        if (painting == null) return;
+        int pWidth = painting.value().width();
+        int pHeight = painting.value().height();
+        float max = Math.max(pWidth, pHeight);
+
+        var paintingsAtlas = Minecraft.getInstance()
+                .getAtlasManager()
+                .getAtlasOrThrow(AtlasIds.PAINTINGS);
+        var sprite = paintingsAtlas.getSprite(painting.value().assetId());
+
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x + width - ArmortipUtil.SIZE, y - 12, (int)(ArmortipUtil.SIZE * (pWidth / max)), (int)(ArmortipUtil.SIZE * (pHeight / max)));
+    }
+
+    private void renderPottery(int x, int y, int width, GuiGraphicsExtractor gui) {
+        var pottery = itemStack.get(DataComponents.PROVIDES_POTTERY_PATTERN);
+        if (pottery == null) return;
+
+        var potAtlas = Minecraft.getInstance()
+                .getAtlasManager()
+                .getAtlasOrThrow(AtlasIds.DECORATED_POT);
+        var sprite = potAtlas.getSprite(
+                pottery.value().assetId().withPrefix("entity/decorated_pot/"));
+
+        gui.blitSprite(RenderPipelines.GUI_TEXTURED, sprite,
+                x + width - ArmortipUtil.SIZE, y - 12,
+                ArmortipUtil.SIZE, ArmortipUtil.SIZE);
+    }
+
     private void renderEgg(Player player, int x, int y, int width, GuiGraphicsExtractor gui) {
         var type = getEntityType(this.itemStack);
         if (type == null) return;
@@ -254,8 +300,15 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
         return itemPatterns != null && itemPatterns.size() > 0 ? itemPatterns.get(0) : null;
     }
 
-    public static EntityType<?> getEntityType(final ItemStack itemStack) {
+    private static EntityType<?> getEntityType(final ItemStack itemStack) {
         var entityData = itemStack.get(DataComponents.ENTITY_DATA);
         return entityData != null ? entityData.type() : null;
+    }
+
+    private static MobEffectInstance getEffect(final ItemStack itemStack) {
+        var potion = itemStack.get(DataComponents.POTION_CONTENTS);
+        if (potion == null) return null;
+        var effect = potion.potion().map(p -> p.value().getEffects());
+        return effect.isPresent() && !effect.get().isEmpty() ? effect.get().getFirst() : null;
     }
 }
