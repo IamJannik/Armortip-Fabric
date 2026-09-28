@@ -1,6 +1,7 @@
 package net.bmjo.armortip.gui.tooltip;
 
 import net.bmjo.armortip.util.ArmortipUtil;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -67,25 +68,27 @@ public class ArmorTooltipComponent implements ClientTooltipComponent {
 
     @Override
     public void extractImage(@NotNull Font font, int x, int y, int width, int height, @NotNull GuiGraphicsExtractor gui) {
-        if (ArmortipUtil.isTipItem(this.itemStack)) {
-            LocalPlayer player = Minecraft.getInstance().player;
-            if (player == null)
-                return;
-            if (this.itemStack.getItem() instanceof SmithingTemplateItem)
-                this.renderTrim(player, x, y, width, gui);
-            else if (this.itemStack.has(DataComponents.PROVIDES_BANNER_PATTERNS))
-                this.renderBanner(x, y, width, gui);
-            else if (this.itemStack.has(DataComponents.ENTITY_DATA))
-                this.renderEgg(player, x, y, width, gui);
-            else if (itemStack.has(DataComponents.POTION_CONTENTS))
-                this.renderEffect(x, y, width, gui);
-            else if (itemStack.has(DataComponents.PAINTING_VARIANT))
-                this.renderPainting(x, y, width, gui);
-            else if (itemStack.has(DataComponents.PROVIDES_POTTERY_PATTERN))
-                this.renderPottery(x, y, width, gui);
-            else
-                this.renderEquipment(player, x, y, width, gui);
-        }
+        if (!ArmortipUtil.isTipItem(this.itemStack)) return;
+
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null) return;
+
+        if (itemStack.isDamageableItem() && FabricLoader.getInstance().isModLoaded("legendarytooltips")) y -= 16;
+
+        if (itemStack.getItem() instanceof SmithingTemplateItem)
+            renderTrim(player, x, y, width, gui);
+        else if (itemStack.has(DataComponents.PROVIDES_BANNER_PATTERNS))
+            renderBanner(x, y, width, gui);
+        else if (itemStack.has(DataComponents.ENTITY_DATA))
+            renderEgg(player, x, y, width, gui);
+        else if (itemStack.has(DataComponents.POTION_CONTENTS))
+            renderEffect(x, y, width, gui);
+        else if (itemStack.has(DataComponents.PAINTING_VARIANT))
+            renderPainting(x, y, width, gui);
+        else if (itemStack.has(DataComponents.PROVIDES_POTTERY_PATTERN))
+            renderPottery(x, y, width, gui);
+        else
+            renderEquipment(player, x, y, width, gui);
     }
 
     private void renderEquipment(Player player, int x, int y, int width, GuiGraphicsExtractor gui) {

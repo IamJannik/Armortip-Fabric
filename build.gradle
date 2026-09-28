@@ -43,7 +43,7 @@ dependencies {
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
 	// ModMenu
-	implementation("com.terraformersmc:modmenu:21.0.0")
+	implementation "com.terraformersmc:modmenu:21.0.0"
 }
 
 processResources {
