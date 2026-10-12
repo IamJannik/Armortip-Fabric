@@ -32,6 +32,7 @@
 			"environment": "client"
 		}
 	],
+	"accessWidener": "armortip.classtweaker",
 	"depends": {
 		"fabricloader": ">=0.19.5",
 		"minecraft": "~26.3",

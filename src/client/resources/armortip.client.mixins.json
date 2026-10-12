@@ -3,10 +3,12 @@
   "package": "net.bmjo.armortip.mixin.client",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "ContainerScreenMixin",
+    "EnchantmentMixin",
     "GuiMixin",
-    "ItemMixin",
-    "TooltipComponentMixin"
+    "ItemMixins",
+    "ItemMixins$PaintingMixin",
+    "ItemMixins$TrimMixin",
+    "ItemStackMixin"
   ],
   "injectors": {
     "defaultRequire": 1

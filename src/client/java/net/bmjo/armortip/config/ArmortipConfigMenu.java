@@ -16,7 +16,7 @@ public class ArmortipConfigMenu extends OptionsSubScreen {
     protected void addOptions() {
         if (this.list != null) {
             this.list.addBig(ArmortipConfig.isEnabled);
-            this.list.addSmall(ArmortipConfig.getOptions().toArray(new OptionInstance[0]));
+            this.list.addSmall(ArmortipConfig.getOptions().subList(1, ArmortipConfig.getOptions().size()).toArray(new OptionInstance[0]));
         }
     }
 

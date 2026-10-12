@@ -1,15 +1,18 @@
 package net.bmjo.armortip;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import net.bmjo.armortip.config.ArmortipConfig;
 import net.bmjo.armortip.util.ArmortipUtil;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.NonNull;
 
 public class Armortip implements ClientModInitializer {
 	public static final String MOD_ID = "armortip";
-	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+	public static @NonNull Identifier identify(String string) {
+		return Identifier.fromNamespaceAndPath(MOD_ID, string);
+	}
 
 	@Override
 	public void onInitializeClient() {

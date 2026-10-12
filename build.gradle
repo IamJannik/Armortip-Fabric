@@ -31,6 +31,7 @@ loom {
 		}
 	}
 
+	accessWidenerPath = file("src/main/resources/armortip.classtweaker")
 }
 
 dependencies {
