@@ -33,7 +33,7 @@ public class ToolTooltip implements ClientTooltipComponent {
 
     @Override
     public int getHeight(@NonNull Font font) {
-        return ArmortipUtil.LINE_HEIGHT * (widgets.size() / 2 + 1) + ArmortipUtil.PADDING;
+        return ArmortipUtil.LINE_HEIGHT * widgets.size() + ArmortipUtil.PADDING;
     }
 
     @Override

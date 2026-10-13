@@ -17,7 +17,7 @@ import java.util.List;
 @Mixin(GuiGraphicsExtractor.class)
 public abstract class GuiMixin {
     @Inject(method = "tooltip", at = @At("HEAD"))
-    private void l(Font font, List<ClientTooltipComponent> lines, int xo, int yo, ClientTooltipPositioner positioner, @Nullable Identifier style, boolean extraSpaceAfterFirstLine, CallbackInfo ci) {
+    private void armortip$addItemtips(Font font, List<ClientTooltipComponent> lines, int xo, int yo, ClientTooltipPositioner positioner, @Nullable Identifier style, boolean extraSpaceAfterFirstLine, CallbackInfo ci) {
         ArmortipUtil.modifyTooltips(lines);
     }
 }

@@ -16,45 +16,65 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.SmithingTemplateItem;
 import net.minecraft.world.level.Level;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 public class ArmortipUtil {
-    private static final Map<EntityType<?>, LivingEntity> ENTITY_CACHE;
-    private static final List<TooltipEntry> TOOLTIP_ENTRIES;
     public static final int PADDING = 2;
     public static final int LINE_HEIGHT = 10;
+    public static final int ITEM_SIZE = 8;
+    public static final int CYCLE_TICKS = 40;
+
+    private static final Map<EntityType<?>, @Nullable LivingEntity> ENTITY_CACHE = new HashMap<>();
+
+    private static final List<TooltipEntry> TOOLTIP_ENTRIES = List.of(
+            TooltipEntry.of(ToolTooltip::new, ArmortipConfig.showTool, DataComponents.TOOL, DataComponents.WEAPON),
+            TooltipEntry.of(ArmorTooltip::new, ArmortipConfig.showArmor, DataComponents.EQUIPPABLE),
+            new TooltipEntry(TrimTooltip::new, ArmortipConfig.showTrim::get, stack -> stack.getItem() instanceof SmithingTemplateItem && stack.getItem() != Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE),
+            TooltipEntry.of(EntityTooltip::new, ArmortipConfig.showMob, DataComponents.ENTITY_DATA),
+            TooltipEntry.of(EffectTooltip::new, ArmortipConfig.showEffect, DataComponents.POTION_CONTENTS),
+            TooltipEntry.of(PaintingTooltip::new, ArmortipConfig.showPainting, DataComponents.PAINTING_VARIANT),
+            TooltipEntry.of(PotteryTooltip::new, ArmortipConfig.showPottery, DataComponents.PROVIDES_POTTERY_PATTERN),
+            TooltipEntry.of(BannerTooltip::new, ArmortipConfig.showBanner, DataComponents.PROVIDES_BANNER_PATTERNS),
+            new TooltipEntry(DurabilityTooltip::new, ArmortipConfig.showDurability::get, ItemStack::isDamaged)
+    );
 
     public static int ticks;
 
-    public static void tick(Minecraft minecraft) {
+    public static void tick() {
         ticks++;
     }
 
+    public static void clearCaches() {
+        ENTITY_CACHE.clear();
+        TrimTooltip.clearCaches();
+        BannerTooltip.clearCaches();
+    }
+
     public static ItemStack getFocusedItem() {
-        return Minecraft.getInstance().gui.screen() instanceof AbstractContainerScreen<? extends AbstractContainerMenu> screen && screen.hoveredSlot != null ? screen.hoveredSlot.getItem() : ItemStack.EMPTY;
+        return Minecraft.getInstance().gui.screen() instanceof AbstractContainerScreen<?> screen && screen.hoveredSlot != null ? screen.hoveredSlot.getItem() : ItemStack.EMPTY;
     }
 
     public static void modifyTooltips(List<ClientTooltipComponent> lines) {
         if (!ArmortipConfig.isEnabled.get()) return;
-        var itemStack = ArmortipUtil.getFocusedItem();
-        if (itemStack == null || itemStack.isEmpty()) return;
+        var itemStack = getFocusedItem();
+        if (itemStack.isEmpty()) return;
 
         int i = 1;
         for (var entry : TOOLTIP_ENTRIES)
-            if (entry.config.get() && entry.condition().test(itemStack))
+            if (entry.config().getAsBoolean() && entry.condition().test(itemStack))
                 lines.add(i++, entry.factory().apply(itemStack));
     }
 
@@ -65,12 +85,12 @@ public class ArmortipUtil {
         return showToolTip || showArmorTip;
     }
 
-    public static void renderEntity(LivingEntity entity, int x, int y, int size, GuiGraphicsExtractor gui) {
+    public static void renderEntity(@Nullable LivingEntity entity, int x, int y, int size, GuiGraphicsExtractor gui) {
         if (entity == null)
             return;
 
-        float yRot = (float) Math.atan(80 * Math.cos(ArmortipUtil.ticks / 64.0F) / 40.0F);
-        float xRot = (float) Math.atan(20 * Math.sin(2 * ArmortipUtil.ticks / 64.0F) / 40.0F);
+        float yRot = (float) Math.atan(80 * Math.cos(ticks / 64.0F) / 40.0F);
+        float xRot = (float) Math.atan(20 * Math.sin(2 * ticks / 64.0F) / 40.0F);
 
         Quaternionf quaternionf = new Quaternionf().rotateZ((float) Math.PI);
         Quaternionf quaternionf2 = new Quaternionf().rotateX(xRot * 20.0F * 0.017453292F);
@@ -109,33 +129,19 @@ public class ArmortipUtil {
         return entityRenderState;
     }
 
-    public static LivingEntity getCachedEntity(Level level, EntityType<?> type) {
-        return ENTITY_CACHE.computeIfAbsent(type, entityType -> {
-            var entity = entityType.create(level, EntitySpawnReason.LOAD);
-            if (!(entity instanceof LivingEntity livingEntity)) return null;
-            livingEntity.setId(-14547 - ENTITY_CACHE.size());
-            return livingEntity;
-        });
-    }
+    public static @Nullable LivingEntity getCachedEntity(Level level, EntityType<?> type) {
+        if (ENTITY_CACHE.containsKey(type)) return ENTITY_CACHE.get(type);
 
-    static {
-        ENTITY_CACHE = new HashMap<>();
-        TOOLTIP_ENTRIES = List.of(
-                TooltipEntry.of(ToolTooltip::new, ArmortipConfig.showTool, DataComponents.TOOL, DataComponents.WEAPON),
-                TooltipEntry.of(ArmorTooltip::new, ArmortipConfig.showArmor, DataComponents.EQUIPPABLE),
-                new TooltipEntry(TrimTooltip::new, ArmortipConfig.showTrim::get, stack -> stack.getItem() instanceof SmithingTemplateItem && stack.getItem() != Items.NETHERITE_UPGRADE_SMITHING_TEMPLATE),
-                TooltipEntry.of(EntityTooltip::new, ArmortipConfig.showMob, DataComponents.ENTITY_DATA),
-                TooltipEntry.of(EffectTooltip::new, ArmortipConfig.showEffect, DataComponents.POTION_CONTENTS),
-                TooltipEntry.of(PaintingTooltip::new, ArmortipConfig.showPainting, DataComponents.PAINTING_VARIANT),
-                TooltipEntry.of(PotteryTooltip::new, ArmortipConfig.showPottery, DataComponents.PROVIDES_POTTERY_PATTERN),
-                TooltipEntry.of(BannerTooltip::new, ArmortipConfig.showBanner, DataComponents.PROVIDES_BANNER_PATTERNS),
-                new TooltipEntry(DurabilityTooltip::new, () -> true, ItemStack::isDamaged)
-        );
+        var entity = type.create(level, EntitySpawnReason.LOAD);
+        var livingEntity = entity instanceof LivingEntity living ? living : null;
+        if (livingEntity != null) livingEntity.setId(-14547 - ENTITY_CACHE.size());
+        ENTITY_CACHE.put(type, livingEntity);
+        return livingEntity;
     }
 
     private record TooltipEntry(
             Function<ItemStack, ClientTooltipComponent> factory,
-            Supplier<Boolean> config,
+            BooleanSupplier config,
             Predicate<ItemStack> condition) {
 
         static TooltipEntry of(Function<ItemStack, ClientTooltipComponent> factory, OptionInstance<Boolean> config, DataComponentType<?>... types) {

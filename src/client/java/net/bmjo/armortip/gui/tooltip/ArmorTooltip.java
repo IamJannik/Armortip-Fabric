@@ -9,12 +9,12 @@ import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.equipment.Equippable;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +22,7 @@ import java.util.List;
 public class ArmorTooltip implements ClientTooltipComponent {
     private final List<AttributeComponent> widgets = new ArrayList<>();
     private final ItemStack itemStack;
-    private final Equippable equippable;
+    private final @Nullable Equippable equippable;
 
     public ArmorTooltip(ItemStack itemStack) {
         this.itemStack = itemStack;
@@ -64,6 +64,7 @@ public class ArmorTooltip implements ClientTooltipComponent {
 
     @Override
     public void extractImage(@NonNull Font font, int x, int y, int w, int h, @NonNull GuiGraphicsExtractor graphics) {
+        if (equippable == null) return;
         var player = Minecraft.getInstance().player;
         if (player != null) renderArmor(x, y, graphics, player);
 
@@ -95,9 +96,10 @@ public class ArmorTooltip implements ClientTooltipComponent {
 
     private void renderAnimal(EquipmentSlot slot, Equippable equippableComponent, int x, int y, GuiGraphicsExtractor graphics, Player player) {
         var entities = equippableComponent.allowedEntities();
-        if (entities.isEmpty()) return;
+        if (entities.isEmpty() || entities.get().size() <= 0) return;
         var animalType = entities.get().get(0).value();
-        LivingEntity animal = ArmortipUtil.getCachedEntity(player.level(), animalType);
+        var animal = ArmortipUtil.getCachedEntity(player.level(), animalType);
+        if (animal == null) return;
         ItemStack originalStack = animal.getItemBySlot(slot);
         animal.setItemSlot(slot, this.itemStack);
         ArmortipUtil.renderEntity(animal, x, y, getSize(), graphics);

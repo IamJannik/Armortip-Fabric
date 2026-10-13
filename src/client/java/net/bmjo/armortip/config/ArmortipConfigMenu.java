@@ -2,7 +2,6 @@ package net.bmjo.armortip.config;
 
 import net.bmjo.armortip.Armortip;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.Component;
@@ -16,7 +15,7 @@ public class ArmortipConfigMenu extends OptionsSubScreen {
     protected void addOptions() {
         if (this.list != null) {
             this.list.addBig(ArmortipConfig.isEnabled);
-            this.list.addSmall(ArmortipConfig.getOptions().subList(1, ArmortipConfig.getOptions().size()).toArray(new OptionInstance[0]));
+            this.list.addSmall(ArmortipConfig.getFeatureOptions());
         }
     }
 

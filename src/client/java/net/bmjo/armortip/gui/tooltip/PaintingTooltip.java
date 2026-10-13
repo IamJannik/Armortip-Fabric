@@ -13,53 +13,56 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public class PaintingTooltip implements ClientTooltipComponent {
     private static final int SIZE = 32;
+
+    private final @Nullable TextureAtlasSprite sprite;
     private final FormattedCharSequence title;
-    private final TextureAtlasSprite sprite;
+    private final FormattedCharSequence dimensions;
     private final int width;
     private final int height;
-    private final FormattedCharSequence dimensions;
 
     public PaintingTooltip(ItemStack itemStack) {
-        var painting = itemStack.get(DataComponents.PAINTING_VARIANT);
-        if (painting == null) {
-            this.title = null;
+        var paintingHolder = itemStack.get(DataComponents.PAINTING_VARIANT);
+        if (paintingHolder == null) {
             this.sprite = null;
+            this.title = FormattedCharSequence.EMPTY;
+            this.dimensions = FormattedCharSequence.EMPTY;
             this.width = 0;
             this.height = 0;
-            this.dimensions = null;
             return;
         }
 
-        this.title = painting.value().title().isPresent() ? painting.value().title().get().getVisualOrderText() : Component.literal("???").getVisualOrderText();
-
+        var painting = paintingHolder.value();
+        this.title = painting.title().orElseGet(() -> Component.literal("???")).getVisualOrderText();
         var paintingsAtlas = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(AtlasIds.PAINTINGS);
-        this.sprite = paintingsAtlas.getSprite(painting.value().assetId());
+        this.sprite = paintingsAtlas.getSprite(painting.assetId());
 
-        int pWidth = painting.value().width();
-        int pHeight = painting.value().height();
-        float max = Math.max(pWidth, pHeight);
-        this.width = (int) (SIZE * (pWidth / max));
-        this.height = (int) (SIZE * (pHeight / max));
-        this.dimensions = Component.translatable("painting.dimensions", pWidth, pHeight).getVisualOrderText();
-
+        int paintingWidth = painting.width();
+        int paintingHeight = painting.height();
+        float max = Math.max(paintingWidth, paintingHeight);
+        this.width = (int) (SIZE * (paintingWidth / max));
+        this.height = (int) (SIZE * (paintingHeight / max));
+        this.dimensions = Component.translatable("painting.dimensions", paintingWidth, paintingHeight).getVisualOrderText();
     }
 
     @Override
     public int getHeight(@NonNull Font font) {
-        return height + ArmortipUtil.PADDING + (title != null ? ArmortipUtil.LINE_HEIGHT : 0) + (dimensions != null ? 10 : 0);
+        if (this.sprite == null) return 0;
+        return height + ArmortipUtil.PADDING + 2 * ArmortipUtil.LINE_HEIGHT;
     }
 
     @Override
     public int getWidth(@NonNull Font font) {
-        return Math.max(width, Math.max(title != null ? font.width(title) : 0, dimensions != null ? font.width(dimensions) : 0));
+        if (this.sprite == null) return 0;
+        return Math.max(width, Math.max(font.width(title), font.width(dimensions)));
     }
 
     @Override
     public void extractImage(@NonNull Font font, int x, int y, int w, int h, @NonNull GuiGraphicsExtractor graphics) {
-        if (this.sprite == null) return;
+        if (sprite == null) return;
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, width, height);
         graphics.text(font, title, x, y + height + ArmortipUtil.PADDING, -1);
         graphics.text(font, dimensions, x, y + height + ArmortipUtil.PADDING + ArmortipUtil.LINE_HEIGHT, -1);

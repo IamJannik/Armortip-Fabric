@@ -8,5 +8,7 @@
   "option.armortip.effect": "Effect",
   "option.armortip.pottery": "Pottery",
   "option.armortip.painting": "Painting",
-  "option.armortip.banner": "Banner"
+  "option.armortip.disc": "Disc",
+  "option.armortip.banner": "Banner",
+  "option.armortip.durability": "Durability"
 }

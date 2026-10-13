@@ -19,20 +19,22 @@ import net.minecraft.world.item.equipment.trim.ArmorTrim;
 import net.minecraft.world.item.equipment.trim.TrimMaterial;
 import net.minecraft.world.item.equipment.trim.TrimPattern;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class TrimTooltip implements ClientTooltipComponent {
-    private static final Map<Item, Holder<TrimPattern>> PATTERN_CACHE;
-    private static List<Holder.Reference<TrimMaterial>> MATERIAL_CACHE;
-    private static final Map<Holder<TrimMaterial>, Holder<Item>> ITEM_CACHE;
-    private static final EquipmentSlot[] ARMOR_SLOTS;
-    private static final Item[] DEFAULT_ARMOR;
     private static final int SIZE = 40;
+
+    private static final EquipmentSlot[] ARMOR_SLOTS = {EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD};
+    private static final Item[] DEFAULT_ARMOR = {Items.NETHERITE_BOOTS, Items.NETHERITE_LEGGINGS, Items.NETHERITE_CHESTPLATE, Items.NETHERITE_HELMET};
+
+    private static final Map<Item, @Nullable Holder<TrimPattern>> PATTERN_CACHE = new HashMap<>();
+    private static final Map<Holder<TrimMaterial>, @Nullable Holder<Item>> ITEM_CACHE = new HashMap<>();
+    private static @Nullable List<Holder.Reference<TrimMaterial>> materialCache;
 
     private final ItemStack itemStack;
 
@@ -40,14 +42,20 @@ public class TrimTooltip implements ClientTooltipComponent {
         this.itemStack = itemStack;
     }
 
+    public static void clearCaches() {
+        PATTERN_CACHE.clear();
+        ITEM_CACHE.clear();
+        materialCache = null;
+    }
+
     @Override
     public int getHeight(@NonNull Font font) {
-        return SIZE;
+        return SIZE + ArmortipUtil.PADDING;
     }
 
     @Override
     public int getWidth(@NonNull Font font) {
-        return SIZE + 8;
+        return SIZE + ArmortipUtil.ITEM_SIZE / 2;
     }
 
     @Override
@@ -56,13 +64,13 @@ public class TrimTooltip implements ClientTooltipComponent {
         if (player != null) renderTrim(x, y, graphics, player, player.level());
     }
 
-    private void renderTrim(int x, int y, GuiGraphicsExtractor gui, Player player, Level level) {
+    private void renderTrim(int x, int y, GuiGraphicsExtractor gui, Player player, @Nullable Level level) {
         if (level == null) return;
         var pattern = getCachedTrimPattern(level, this.itemStack.getItem());
         var material = getCachedTrimMaterial(level);
         if (pattern == null || material == null) return;
 
-        var originalArmor = new ItemStack[4];
+        var originalArmor = new ItemStack[ARMOR_SLOTS.length];
         for (int i = 0; i < ARMOR_SLOTS.length; i++) originalArmor[i] = player.getItemBySlot(ARMOR_SLOTS[i]).copy();
         for (int i = 0; i < ARMOR_SLOTS.length; i++) {
             var itemStack = player.getItemBySlot(ARMOR_SLOTS[i]);
@@ -75,58 +83,51 @@ public class TrimTooltip implements ClientTooltipComponent {
             }
         }
         ArmortipUtil.renderEntity(player, x - SIZE / 6, y, SIZE, gui);
-        renderMaterial(material, x, y, gui, player.level());
+        renderMaterial(material, x, y, gui, level);
         for (int i = 0; i < ARMOR_SLOTS.length; i++) player.setItemSlot(ARMOR_SLOTS[i], originalArmor[i]);
     }
 
-    private static void renderMaterial(Holder<TrimMaterial> material, int x, int y, GuiGraphicsExtractor gui, Level world) {
-        var item = getCachedMaterialItem(world, material);
+    private static void renderMaterial(Holder<TrimMaterial> material, int x, int y, GuiGraphicsExtractor gui, Level level) {
+        var item = getCachedMaterialItem(level, material);
         if (item == null) return;
 
         gui.pose().pushMatrix();
-        int offset = 3 * SIZE / 4;
-        gui.pose().translate(x + offset, y);
+        gui.pose().translate(x + 3 * SIZE / 4 - ArmortipUtil.ITEM_SIZE / 2, y);
         gui.pose().scale(0.5F);
         gui.item(item.value().getDefaultInstance(), 0, 0);
         gui.pose().popMatrix();
     }
 
-    static {
-        PATTERN_CACHE = new HashMap<>();
-        ITEM_CACHE = new HashMap<>();
-        ARMOR_SLOTS = new EquipmentSlot[]{EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD};
-        DEFAULT_ARMOR = new Item[]{Items.NETHERITE_BOOTS, Items.NETHERITE_LEGGINGS, Items.NETHERITE_CHESTPLATE, Items.NETHERITE_HELMET};
+    private static @Nullable Holder<TrimPattern> getCachedTrimPattern(Level level, Item item) {
+        if (PATTERN_CACHE.containsKey(item)) return PATTERN_CACHE.get(item);
+
+        var trimId = BuiltInRegistries.ITEM.getKey(item).toString().split("_", 2)[0];
+        var registry = level.registryAccess().lookupOrThrow(Registries.TRIM_PATTERN);
+        Holder<TrimPattern> pattern = registry.listElements()
+                .filter(trim -> trim.value().assetId().toString().equals(trimId))
+                .findFirst()
+                .orElse(null);
+        PATTERN_CACHE.put(item, pattern);
+        return pattern;
     }
 
-    private static @Nullable Holder<TrimPattern> getCachedTrimPattern(Level world, Item item) {
-        return PATTERN_CACHE.computeIfAbsent(item, i -> {
-            var itemId = BuiltInRegistries.ITEM.getKey(i);
-            var trimId = itemId.toString().split("_", 2)[0];
-
-            var registryAccess = world.registryAccess();
-            var registry = registryAccess.lookupOrThrow(Registries.TRIM_PATTERN);
-            return registry.listElements().filter(trim -> trim.value().assetId().toString().equals(trimId)).findFirst().orElse(null);
-        });
-    }
-
-    private static Holder<TrimMaterial> getCachedTrimMaterial(Level world) {
-        if (MATERIAL_CACHE == null) {
-            var registryAccess = world.registryAccess();
-            var registry = registryAccess.lookupOrThrow(Registries.TRIM_MATERIAL);
-            MATERIAL_CACHE = registry.listElements().toList();
+    private static @Nullable Holder<TrimMaterial> getCachedTrimMaterial(Level level) {
+        if (materialCache == null) {
+            materialCache = level.registryAccess().lookupOrThrow(Registries.TRIM_MATERIAL).listElements().toList();
         }
-        return MATERIAL_CACHE.get((ArmortipUtil.ticks / 40) % MATERIAL_CACHE.size());
+        if (materialCache.isEmpty()) return null;
+        return materialCache.get((ArmortipUtil.ticks / ArmortipUtil.CYCLE_TICKS) % materialCache.size());
     }
 
-    private static Holder<Item> getCachedMaterialItem(Level world, Holder<TrimMaterial> material) {
-        return ITEM_CACHE.computeIfAbsent(material, m -> {
-            var registryAccess = world.registryAccess();
-            var registry = registryAccess.lookupOrThrow(Registries.ITEM);
-            return registry.listElements().filter(item -> {
-                var materialProvider = item.value().getDefaultInstance().get(DataComponents.PROVIDES_TRIM_MATERIAL);
-                if (materialProvider == null) return false;
-                return materialProvider.value().equals(m.value());
-            }).findFirst().orElse(null);
-        });
+    private static @Nullable Holder<Item> getCachedMaterialItem(Level level, Holder<TrimMaterial> material) {
+        if (ITEM_CACHE.containsKey(material)) return ITEM_CACHE.get(material);
+
+        var registry = level.registryAccess().lookupOrThrow(Registries.ITEM);
+        var item = registry.listElements().filter(candidate -> {
+            var materialProvider = candidate.value().getDefaultInstance().get(DataComponents.PROVIDES_TRIM_MATERIAL);
+            return materialProvider != null && materialProvider.value().equals(material.value());
+        }).findFirst().orElse(null);
+        ITEM_CACHE.put(material, item);
+        return item;
     }
 }

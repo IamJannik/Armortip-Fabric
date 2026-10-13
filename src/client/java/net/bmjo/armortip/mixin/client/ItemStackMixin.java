@@ -5,7 +5,6 @@ import net.bmjo.armortip.util.ArmortipUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.TooltipDisplay;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,8 +21,9 @@ public abstract class ItemStackMixin {
         instance.addAttributeTooltips(consumer, display, player);
     }
 
-    @Redirect(method = "addDetailsToTooltip(Lnet/minecraft/world/item/Item$TooltipContext;Lnet/minecraft/world/item/component/TooltipDisplay;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/TooltipFlag;Ljava/util/function/Consumer;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/TooltipFlag;isAdvanced()Z"))
-    private boolean skipDurability(TooltipFlag instance) {
-        return !ArmortipConfig.isEnabled.get() && instance.isAdvanced();
+    @Redirect(method = "addDetailsToTooltip(Lnet/minecraft/world/item/Item$TooltipContext;Lnet/minecraft/world/item/component/TooltipDisplay;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/TooltipFlag;Ljava/util/function/Consumer;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;isDamaged()Z"))
+    private boolean showVanillaDurability(ItemStack instance) {
+        if (ArmortipConfig.isEnabled.get() && ArmortipConfig.showDurability.get()) return false;
+        return instance.isDamaged();
     }
 }

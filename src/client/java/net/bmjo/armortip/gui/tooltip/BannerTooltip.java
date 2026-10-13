@@ -18,69 +18,87 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BannerPattern;
 import net.minecraft.world.level.block.entity.BannerPatternLayers;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class BannerTooltip implements ClientTooltipComponent {
-    private static final Map<DyeColor, Holder<Item>> ITEM_CACHE = new HashMap<>();
-    private final HolderSet<BannerPattern> pattern;
-    private final BannerFlagModel bannerFlagModel;
+    private static final int BANNER_WIDTH = 20;
+    private static final int BANNER_HEIGHT = 40;
+
+    private static final DyeColor[] DYE_COLORS = DyeColor.values();
+    private static final Map<DyeColor, @Nullable Holder<Item>> ITEM_CACHE = new HashMap<>();
+
+    private static @Nullable BannerFlagModel bannerFlagModel;
+
+    private final @Nullable HolderSet<BannerPattern> pattern;
 
     public BannerTooltip(ItemStack itemStack) {
         this.pattern = itemStack.get(DataComponents.PROVIDES_BANNER_PATTERNS);
+    }
 
-        var modelPart = Minecraft.getInstance().getEntityModels().bakeLayer(ModelLayers.STANDING_BANNER_FLAG);
-        this.bannerFlagModel = new BannerFlagModel(modelPart);
+    public static void clearCaches() {
+        ITEM_CACHE.clear();
     }
 
     @Override
     public int getHeight(@NonNull Font font) {
-        return 40 + ArmortipUtil.PADDING;
+        return BANNER_HEIGHT + ArmortipUtil.PADDING;
     }
 
     @Override
     public int getWidth(@NonNull Font font) {
-        return 20 + ArmortipUtil.PADDING + 8;
+        return BANNER_WIDTH + ArmortipUtil.PADDING + ArmortipUtil.ITEM_SIZE;
     }
 
     @Override
     public void extractImage(@NonNull Font font, int x, int y, int w, int h, @NonNull GuiGraphicsExtractor graphics) {
-        if (this.pattern == null || this.bannerFlagModel == null) return;
+        if (this.pattern == null || this.pattern.size() == 0) return;
 
         var color = getDyeColor();
-        var layer = new BannerPatternLayers.Layer(pattern.get(0), color);
+        var layer = new BannerPatternLayers.Layer(this.pattern.get(0), color);
         var bannerPatternLayers = new BannerPatternLayers(List.of(layer));
 
-        graphics.bannerPattern(bannerFlagModel, DyeColor.WHITE, bannerPatternLayers, x, y, x + 20, y + 40);
-        renderDye(color, x, y, graphics, Minecraft.getInstance().level);
+        graphics.bannerPattern(getBannerFlagModel(), DyeColor.WHITE, bannerPatternLayers, x, y, x + BANNER_WIDTH, y + BANNER_HEIGHT);
+
+        var level = Minecraft.getInstance().level;
+        if (level != null) renderDye(color, x, y, graphics, level);
     }
 
-    private static void renderDye(DyeColor color, int x, int y, GuiGraphicsExtractor gui, Level world) {
-        var item = getCachedDyeItem(world, color);
+    private static void renderDye(DyeColor color, int x, int y, GuiGraphicsExtractor gui, Level level) {
+        var item = getCachedDyeItem(level, color);
         if (item == null) return;
 
         gui.pose().pushMatrix();
-        gui.pose().translate(x + 20 + ArmortipUtil.PADDING, y);
+        gui.pose().translate(x + BANNER_WIDTH + ArmortipUtil.PADDING, y);
         gui.pose().scale(0.5F);
         gui.item(item.value().getDefaultInstance(), 0, 0);
         gui.pose().popMatrix();
     }
 
-    private static DyeColor getDyeColor() {
-        return DyeColor.values()[(ArmortipUtil.ticks / 40) % DyeColor.values().length];
+    private static BannerFlagModel getBannerFlagModel() {
+        var models = Minecraft.getInstance().getEntityModels();
+        if (bannerFlagModel == null) {
+            bannerFlagModel = new BannerFlagModel(models.bakeLayer(ModelLayers.STANDING_BANNER_FLAG));
+        }
+        return bannerFlagModel;
     }
 
-    private static Holder<Item> getCachedDyeItem(Level world, DyeColor color) {
-        return ITEM_CACHE.computeIfAbsent(color, c -> {
-            var registryAccess = world.registryAccess();
-            var registry = registryAccess.lookupOrThrow(Registries.ITEM);
-            return registry.listElements().filter(item -> {
-                var dyeProvider = item.value().getDefaultInstance().get(DataComponents.DYE);
-                if (dyeProvider == null) return false;
-                return dyeProvider == c;
-            }).findFirst().orElse(null);
-        });
+    private static DyeColor getDyeColor() {
+        return DYE_COLORS[(ArmortipUtil.ticks / ArmortipUtil.CYCLE_TICKS) % DYE_COLORS.length];
+    }
+
+    private static @Nullable Holder<Item> getCachedDyeItem(Level level, DyeColor color) {
+        if (ITEM_CACHE.containsKey(color)) return ITEM_CACHE.get(color);
+
+        var registry = level.registryAccess().lookupOrThrow(Registries.ITEM);
+        var item = registry.listElements()
+                .filter(candidate -> candidate.value().getDefaultInstance().get(DataComponents.DYE) == color)
+                .findFirst()
+                .orElse(null);
+        ITEM_CACHE.put(color, item);
+        return item;
     }
 }
