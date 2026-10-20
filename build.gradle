@@ -3,12 +3,28 @@ plugins {
 	id 'maven-publish'
 }
 
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
 repositories {
 	// Add repositories to retrieve artifacts from in here.
 	// You should only use this when depending on other mods because
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
+	maven {
+		url = uri("https://maven.terraformersmc.com/")
+	}
+	maven {
+		url = uri("https://api.modrinth.com/maven")
+		content {
+			includeGroup "maven.modrinth"
+		}
+	}
 }
 
 loom {
@@ -20,6 +36,8 @@ loom {
 			sourceSet sourceSets.client
 		}
 	}
+
+	accessWidenerPath = file("src/main/resources/armortip.accesswidener")
 }
 
 dependencies {
@@ -30,6 +48,14 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	modImplementation "maven.modrinth:mOgUt4GM:lEkperf6"
+
+	// Legendary Tooltips (+ required dependencies), only loaded in the dev client for testing
+	modLocalRuntime "maven.modrinth:atHH8NyV:fvJtXL6i"
+	modLocalRuntime "maven.modrinth:5faXoLqX:AiO84cp2"
+	modLocalRuntime "maven.modrinth:1OE8wbN0:Fmetb8IP"
+	modLocalRuntime "maven.modrinth:ohNO6lps:HvR3IdRE"
 }
 
 processResources {
@@ -56,11 +82,10 @@ java {
 }
 
 jar {
-	def projectName = project.name
-	inputs.property "projectName", projectName
+	inputs.property "archivesName", project.base.archivesName
 
 	from("LICENSE") {
-		rename { "${it}_$projectName" }
+		rename { "${it}_${project.base.archivesName.get()}" }
 	}
 }
 
@@ -68,6 +93,7 @@ jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
 			from components.java
 		}
 	}
