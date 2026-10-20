@@ -7,6 +7,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 public class Armortip implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
-        ClientTickEvents.END_CLIENT_TICK.register(ArmortipUtil::tick);
+		ClientTickEvents.END_CLIENT_TICK.register(mc -> ArmortipUtil.tick());
 	}
 }

@@ -1,19 +1,19 @@
 package net.bmjo.armortip.util;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Equipment;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.SmithingTemplateItem;
-import net.minecraft.screen.ScreenHandler;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Equipable;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SmithingTemplateItem;
 import org.jetbrains.annotations.Nullable;
 
 public class ArmortipUtil {
     public static int ticks;
 
     public static boolean isTipItem(ItemStack itemStack) {
-        return itemStack.getItem() instanceof Equipment || itemStack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof Equipment || itemStack.getItem() instanceof SmithingTemplateItem;
+        return itemStack.getItem() instanceof Equipable || itemStack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof Equipable || itemStack.getItem() instanceof SmithingTemplateItem;
     }
 
     public static boolean shouldExtend() {
@@ -23,13 +23,13 @@ public class ArmortipUtil {
 
     @Nullable
     public static ItemStack getFocusedItem() {
-        if (MinecraftClient.getInstance().currentScreen instanceof HandledScreen<? extends ScreenHandler> handledScreen && handledScreen instanceof ISlotScreen islotScreen)
-            if (handledScreen.getScreenHandler().getCursorStack().isEmpty() && islotScreen.getFocusedSlot() != null && islotScreen.getFocusedSlot().hasStack())
-                return islotScreen.getFocusedSlot().getStack();
+        if (Minecraft.getInstance().screen instanceof AbstractContainerScreen<? extends AbstractContainerMenu> handledScreen && handledScreen instanceof ISlotScreen islotScreen)
+            if (handledScreen.getMenu().getCarried().isEmpty() && islotScreen.getHoveredSlot() != null && islotScreen.getHoveredSlot().hasItem())
+                return islotScreen.getHoveredSlot().getItem();
         return null;
     }
 
-    public static void tick(MinecraftClient client) {
+    public static void tick() {
         ticks++;
         ticks %= (int) (2 * Math.PI * 300.0F);
     }
