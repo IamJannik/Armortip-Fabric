@@ -50,12 +50,6 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
 	modImplementation "maven.modrinth:mOgUt4GM:lEkperf6"
-
-	// Legendary Tooltips (+ required dependencies), only loaded in the dev client for testing
-	modLocalRuntime "maven.modrinth:atHH8NyV:fvJtXL6i"
-	modLocalRuntime "maven.modrinth:5faXoLqX:AiO84cp2"
-	modLocalRuntime "maven.modrinth:1OE8wbN0:Fmetb8IP"
-	modLocalRuntime "maven.modrinth:ohNO6lps:HvR3IdRE"
 }
 
 processResources {

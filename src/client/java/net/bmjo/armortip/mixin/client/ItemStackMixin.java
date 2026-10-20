@@ -16,9 +16,9 @@ public abstract class ItemStackMixin {
     }
 
     @Redirect(method = "getTooltipLines", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;shouldShowInTooltip(ILnet/minecraft/world/item/ItemStack$TooltipPart;)Z"))
-    private boolean skipAttributes(int hideFlags, ItemStack.TooltipPart part) {
-        if (part == ItemStack.TooltipPart.MODIFIERS) return false;
-        if (ArmortipUtil.shouldSkipVanillaAttributes((ItemStack) (Object) this)) return false;
+    private boolean showAttributes(int hideFlags, ItemStack.TooltipPart part) {
+        if (part == ItemStack.TooltipPart.MODIFIERS && ArmortipUtil.shouldSkipVanillaAttributes((ItemStack) (Object) this))
+            return false;
         return shouldShowInTooltip(hideFlags, part);
     }
 
