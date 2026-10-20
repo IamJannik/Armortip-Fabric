@@ -17,7 +17,7 @@ public class DurabilityTooltip implements ClientTooltipComponent {
     private final FormattedCharSequence durability;
 
     public DurabilityTooltip(ItemStack itemStack) {
-        icon = Component.literal(" ").withStyle(ChatFormatting.GRAY).withStyle(Style.EMPTY.withFont(Armortip.identify("icons"))).getVisualOrderText();
+        icon = Component.literal("\uE003 ").withStyle(ChatFormatting.GRAY).withStyle(Style.EMPTY.withFont(Armortip.identify("icons"))).getVisualOrderText();
         durability = Component.translatable("item.durability", itemStack.getMaxDamage() - itemStack.getDamageValue(), itemStack.getMaxDamage()).withStyle(ChatFormatting.GRAY).getVisualOrderText();
     }
 
